@@ -1,0 +1,1 @@
+/Users/alfred/dev/worklog/20241115-freeswitch/event_socket_acl.md
