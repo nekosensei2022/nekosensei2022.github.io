@@ -10,7 +10,11 @@ export default defineUserConfig({
   bundler: viteBundler(),
   theme: hopeTheme({
     plugins: {
-      blog: true,
+      blog: true
+    },
+    blog: {
+      avatar: '/assets/images/avatar.png',
+      description: '不怎么厉害的架构师，喜欢新事物，喜欢旅行' 
     },
     navbar: ["/"],
     displayFooter: true,
@@ -28,8 +32,8 @@ export default defineUserConfig({
   },{ custom: true }),
 
   lang: 'zh-CN',
-  title: 'Roxxx 宅基地',
-  description: 'Roxxx 的个人博客',
+  title: 'Nekosensei 的宅基地',
+  description: 'Nekosensei 的个人博客',
   alias: {
     "@theme-hope/modules/blog/components/BlogHero": path.resolve(
       __dirname,
