@@ -3,13 +3,14 @@ import { defaultTheme } from '@vuepress/theme-default'
 import { defineUserConfig } from 'vuepress'
 import { hopeTheme } from "vuepress-theme-hope"
 import { getDirname, path } from "vuepress/utils"
+import { commentPlugin } from '@vuepress/plugin-comment'
 const __dirname = getDirname(import.meta.url)
 
 export default defineUserConfig({
   bundler: viteBundler(),
   theme: hopeTheme({
     plugins: {
-      blog: true
+      blog: true,
     },
     navbar: ["/"],
     displayFooter: true,
@@ -34,5 +35,14 @@ export default defineUserConfig({
       __dirname,
       "./components/BlogHero.vue",
     ),
-  }
+  },
+  plugins: [
+    commentPlugin({
+      provider: 'Giscus',
+      repo: 'nekosensei2022/nekosensei2022.github.io_comments',
+      repoId: 'R_kgDONc7-2w',
+      category: 'Announcements',
+      categoryId: 'DIC_kwDONc7-284ClMHN'
+    }),
+  ],
 })
