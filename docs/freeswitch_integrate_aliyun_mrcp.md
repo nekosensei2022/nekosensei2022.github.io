@@ -8,9 +8,15 @@ category:
 ---
 ## 部署阿里巴巴 MRCP（SDM）
 
+采用 Docker 方式部署。
+
+### 下载镜像
+
 ```bash
 docker pull registry.cn-shanghai.aliyuncs.com/nls-cloud/sdm:latest
 ```
+
+### 环境设置
 
 ```bash
 sudo docker run -d --privileged --net=host --name nls-cloud-sdm -v /data/zhanghf_work/alisdm/volumes/logs:/home/admin/logs -v /data/zhanghf_work/alisdm/volumes/disk:/home/admin/disk registry.cn-shanghai.aliyuncs.com/nls-cloud/sdm:latest standalone
