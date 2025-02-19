@@ -1,90 +1,79 @@
 ---
-title: FreeSWITCH 集成百度 MRCP 产品
+title: FreeSWITCH 集成阿里云 MRCP 产品
 lang: zh-CN
 tag:
   - FreeSWITCH
 category:
   - FreeSWITCH
 ---
-## 部署百度 MRCP
+## 部署阿里巴巴 MRCP（SDM）
 
-参考[此文档](https://ai.baidu.com/ai-doc/SPEECH/Ukarty6aa)所述之步骤。
+```bash
+docker pull registry.cn-shanghai.aliyuncs.com/nls-cloud/sdm:latest
+```
 
-1. 注册百度开发者账号，创建应用
+```bash
+sudo docker run -d --privileged --net=host --name nls-cloud-sdm -v /data/zhanghf_work/alisdm/volumes/logs:/home/admin/logs -v /data/zhanghf_work/alisdm/volumes/disk:/home/admin/disk registry.cn-shanghai.aliyuncs.com/nls-cloud/sdm:latest standalone
+```
 
-    应用管理控制台的地址：
-<https://console.bce.baidu.com/ai/#/ai/speech/app/list>
+### 修改配置文件
 
-1. 下载 MRCP 服务端
+配置文件位于`disk/nls-clou-sdm/conf`目录下。
 
-    <https://ai.baidu.com/download?sdkId=111>
+1. `nlstoken.json`
 
-1. 修改服务端配置文件
+```json
+{
+    "AccessKeyId": "AccessKey",
+    "AccessKeySecret": "AccessKeySecret",
+}
+```
 
-    1. `/mrcp-server/conf/unimrcpserver.xml`
-        
-        修改`unimrcpserver->properties->ip`为本机 IP 地址。
+2. `service-asr.json`
 
-    1. `mrcp-server/conf/mrcp-asr.conf`
+```json
+{
+    "url": "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1",
+    "appkey": "创建asr项⽬的时候 获取到的appkey",
+}
+```
 
-        修改`AUTH_APPID`和`AUTH_APPKEY`为开发者`AppID`和`API Key`。
+3. `service-tts.json`
 
-    1. `mrcp-server/conf/unimrcpserver_control.conf`
+```json
+{
+    "url": "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1",
+    "appkey": "创建asr项⽬的时候 获取到的appkey",
+}
+```
 
-        修改`./bin/check 127.0.0.1 1544`中的`127.0.0.1`为本机 IP 地址。
+### 启动
 
-1. 设置 gcc 环境
+```bash
+sudo docker stop nls-cloud-sdm
+sudo docker start nls-cloud-sdm
+```
 
-    ```bash
-    sudo ./bootstrap.sh
-    ```
+查看是否成功：
 
-1. 测试运行
+```bash
+sudo docker ps
+ps -ef | grep alimrcp-server
+sudo lsof -i:7010
+```
 
-    ```bash
-    cd mrcp-server
-    ./bin/unimrcpserver -r . &
-    ```
+### 测试
 
-1. 客户端验证
+```bash
+docker exec -it nls-cloud-sdm bash
+cd nls-cloudsdm/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib/
+./alimrcp-client -a
+./alimrcp-client -t
+```
 
-    1. 将必要库放入`LD_LIBRARY_PATH`环境变量
-
-        ```bash
-        export LD_LIBRARY_PATH=${SERVER_ROOT}/mrcp-server/lib:$LD_LIBRARY_PATH
-        ```
-
-        其中`${SERVER_ROOT}`替换为真实路径。
-
-    1. 进入客户端交互环境
-
-        ```
-        cd bin
-        ./asrclient
-        ```
-
-    1. 输入指令
-    
-        ```
-        run grammar.xml xeq.pcm
-        ```
-
-        可以看到客户端与服务端的交互过程，如果成功，则会输出类似这样的识别结果：
-
-        ```xml
-        <speech-to-text confidence="100">[17daae42b8f34bac_2_1]我要去西二旗我要去西二旗</speech-to-text>
-        ```
-
-1. 启动守护进程
-
-    如果上述操作成功，则可以将 MRCP 启动为守护进程。
-
-    ```bash
-    cd mrcp-server
-    ./bin/unimrcpserver_control start
-    ```
-
-至此，部署百度 MRCP 服务完成。
+* `-a`是测试 ASR，如输出中有`RECOGNITION-COMPLETE`，则表示成功。
+* `-t`是测试 TTS，如输出中有`SPEAK-COMPLETE`，则表示成功。
 
 ## FreeSWITCH 侧配置
 
@@ -104,17 +93,17 @@ category:
 
 #### 配置连接 mrcp 服务端参数
 
-新建`conf/mrcp_profiles/baidu.xml`：
+新建`conf/mrcp_profiles/aliyun.xml`：
 
 ```xml
 <include>
-  <profile name="baidu" version="2">
+  <profile name="aliyun" version="2">
     <param name="client-ip" value="$${local_ip_v4}"/>
     <param name="client-port" value="5090"/>
-    <param name="server-ip" value="192.168.150.240"/>
-    <param name="server-port" value="5060"/>
+    <param name="server-ip" value="192.168.150.140"/>
+    <param name="server-port" value="7010"/>
     <param name="resource-location" value=""/>
-    <param name="sip-transport" value="udp"/>
+    <param name="sip-transport" value="tcp"/>
     <param name="sdp-origin" value="Freeswitch"/>
     <param name="rtp-ip" value="$${local_ip_v4}"/>
     <param name="rtp-port-min" value="40000"/>
@@ -140,10 +129,10 @@ category:
   <settings>
     <!-- UniMRCP profile to use for TTS -->
     <!-- value对应aliyun-mrcpserver.xml中profile的name -->
-    <param name="default-tts-profile" value="baidu"/>
+    <param name="default-tts-profile" value="aliyun"/>
     <!-- UniMRCP profile to use for ASR -->
     <!-- value对应aliyun-mrcpserver.xml中profile的name -->
-    <param name="default-asr-profile" value="baidu"/>
+    <param name="default-asr-profile" value="aliyun"/>
     <!-- UniMRCP logging level to appear in freeswitch.log.  Options are:
          EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG -->
     <param name="log-level" value="DEBUG"/>
@@ -161,20 +150,13 @@ category:
 </configuration>
 ```
 
-新建`grammar/baidu.gram`：
+新建`grammar/aliyun.gram`：
 
-```xml
-<?xml version="1.0"?>
-<grammar xmlns="http://www.w3.org/2001/06/grammar" xml:lang="en-US" version="1.0" mode="con
-tinuous" root="digit">
-  <rule id="digit">
-    <one-of>
-      <item>one</item>
-      <item>two</item>
-      <item>three</item>
-    </one-of>
-  </rule>
-</grammar>
+```jsgf
+#JSGF V1.0;
+/** JSGF Grammar for example */
+grammar example;
+public <results> = [];
 ```
 
 ### 配置测试拨打计划
